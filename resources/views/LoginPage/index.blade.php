@@ -63,7 +63,13 @@
 
                                     <p class="text-center text-muted mt-5 mb-0">Dont Have an account? <a
                                             href="{{ url('register_view') }}" class="fw-bold text-body"><u>Register
-                                                here</u></a></p>
+                                                here</u></a>
+                                           </p>
+                                    <p class="text-center text-muted mt-5 mb-0">Forgot Password?<a
+                                            href="{{ url('forget-password') }}" class="fw-bold text-body"><u>Reset
+                                                </u></a>
+                                           </p>
+                                          
 
                                 </form>
 
