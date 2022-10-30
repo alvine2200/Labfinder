@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Lab;
-use Auth;
 use App\Models\Appointment;
-use Validator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
@@ -17,16 +17,15 @@ class AppointmentController extends Controller
      */
     public function index()
     {
-        $labs=Lab::all();
-        return view('User.appointment_index')->with(['labs'=>$labs]);
+        $labs = Lab::all();
+        return view('User.appointment_index')->with(['labs' => $labs]);
     }
 
 
     public function appointment_show($id)
     {
-        $lab=Lab::findOrFail($id);
-        return view('User.make_appointment')->with(['lab'=>$lab]);
-
+        $lab = Lab::findOrFail($id);
+        return view('User.make_appointment')->with(['lab' => $lab]);
     }
     /**
      * Show the form for creating a new resource.
@@ -35,42 +34,52 @@ class AppointmentController extends Controller
      */
     public function create(Request $request, $id)
     {
-       $lab=Lab::findOrFail($id);
-       $validator=Validator::make($request->all(),[
-            'test_name'=>'required|string',
-            'date'=>'required|date|after:today',
-            'time'=>'required|string',
+        $lab = Lab::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'test_name' => 'required|string',
+            'date' => 'required|date|after:today',
+            'time' => 'required|string',
         ]);
 
-        if($validator->fails())
-        {
-            return back()->with('fail',$validator->errors());
+        if ($validator->fails()) {
+            return back()->with('fail', $validator->errors());
         }
 
-        $time=Appointment::where('lab_id',$lab->id)->get();
-        if(!$time)
-        {
-             if($time['date'] == $request->date && $time['time'] == $request->time)
-            {
-                return back()->with('fail','Time Or day Already booked');
+        $time = Appointment::where('lab_id', $lab->id)->get();
+        if ($time) {
+            $date = strtotime($request->date);
+            $time_day = $request->time;
+            if (Appointment::where('date', $date)->get() and Appointment::where('time', $time_day)->get()) {
+                return back()->with('fail', 'Time Or day Already booked');
+            } else {
+                Appointment::create([
+                    'lab_id' => $lab->id,
+                    'fullname' => Auth::user()->name,
+                    'phone' => Auth::user()->phone,
+                    'test' => $request->test_name,
+                    'location' => $lab->location,
+                    'lab' => $lab->name,
+                    'date' => $request->date,
+                    'time' => $request->time,
+                ]);
+
+                return back()->with('success', 'Appointment Successfully Submitted');
             }
-        }
-        else{
+        } else {
 
-            $appointment= Appointment::create([
-                'lab_id'=>$lab->id,
-                'fullname'=> Auth::user()->name,
-                'phone'=>Auth::user()->phone,
-                'test'=>$request->test_name,
-                'location'=>$lab->location,
-                'lab'=>$lab->name,
-                'date'=>$request->date,
-                'time'=>$request->time,
+            Appointment::create([
+                'lab_id' => $lab->id,
+                'fullname' => Auth::user()->name,
+                'phone' => Auth::user()->phone,
+                'test' => $request->test_name,
+                'location' => $lab->location,
+                'lab' => $lab->name,
+                'date' => $request->date,
+                'time' => $request->time,
             ]);
 
-             return back()->with('success','Appointment Successfully Submitted');
+            return back()->with('success', 'Appointment Successfully Submitted');
         }
-
     }
 
     /**
@@ -92,12 +101,11 @@ class AppointmentController extends Controller
      */
     public function approve($id)
     {
-        $appoint=Appointment::find($id);
-        $appoint->status='Approved';
+        $appoint = Appointment::find($id);
+        $appoint->status = 'Approved';
         $appoint->save();
 
-        return back()->with('success','Appointment approved Successfully');
-
+        return back()->with('success', 'Appointment approved Successfully');
     }
 
     /**
@@ -108,7 +116,7 @@ class AppointmentController extends Controller
      */
     public function edit()
     {
-        $appointments=Appointment::where('phone',Auth::user()->phone)->get();
+        $appointments = Appointment::where('phone', Auth::user()->phone)->get();
         return view('User.view', compact('appointments'));
     }
 
@@ -127,25 +135,24 @@ class AppointmentController extends Controller
 
     public function cancel()
     {
-        $appoint=Appointment::where('phone',Auth::user()->phone)->first();
-        $appoint->status='cancelled';
+        $appoint = Appointment::where('phone', Auth::user()->phone)->first();
+        $appoint->status = 'cancelled';
         $appoint->save();
 
-        return back()->with('success','Appointment is cancelled');
+        return back()->with('success', 'Appointment is cancelled');
     }
 
 
 
     public function destroy($id)
     {
-
     }
 
 
     public function searchforlabortest(Request $request)
     {
-        $field=$request->search;
-        $find=Lab::where('name','like','%'.$field.'%')->orWhere('tests','like','%'.$field.'%')->get();
-        return view('User.search_view')->with(['find'=>$find]);
+        $field = $request->search;
+        $find = Lab::where('name', 'like', '%' . $field . '%')->orWhere('tests', 'like', '%' . $field . '%')->get();
+        return view('User.search_view')->with(['find' => $find]);
     }
 }
